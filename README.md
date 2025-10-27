@@ -1,6 +1,6 @@
 # Voronoi Diagram using Divide and Conquer
 
-A Python implementation of Voronoi diagram generation using the divide-and-conquer algorithm with an interactive GUI.
+A Python implementation of Voronoi diagram generation using the divide-and-conquer algorithm with an interactive GUI and real-time nearest site queries.
 
 ## Features
 
@@ -9,6 +9,7 @@ A Python implementation of Voronoi diagram generation using the divide-and-conqu
 - **File Input**: Read test cases from input files
 - **Step-by-step Visualization**: Watch the algorithm execute step by step
 - **Convex Hull Display**: Visualize the convex hull during merge operations
+- **🆕 Nearest Site Query (NEW!)**: Find the nearest Voronoi cell to any query point in O(1) time using a raster grid approach
 
 ## Installation
 
@@ -54,6 +55,50 @@ python main.py
 - **Execute**: Run the complete algorithm at once
 - **Step**: Execute the algorithm step by step
 - **Next Data**: Load the next test case from file
+- **Query Mode**: Enable/disable nearest site query mode
+
+### 5. Nearest Site Query (Real-World Application!)
+
+This feature answers the question: **"Which site is nearest to an arbitrary query point q?"**
+
+**Real-world applications:**
+- 🏥 Find nearest hospital/emergency service
+- 🏪 Locate closest store/facility
+- 📍 GPS navigation and location services
+- 🗺️ Geographic information systems (GIS)
+
+**How it works:**
+1. After executing the Voronoi diagram, the system builds a **raster grid** (2D array)
+2. Each grid cell stores the index of its nearest site
+3. Grid resolution: 2 pixels (configurable for accuracy vs. memory tradeoff)
+4. Query time: **O(1)** - instant lookup!
+
+**Usage:**
+1. Generate points and execute the Voronoi diagram
+2. Click the **"Query Mode"** button (turns green when active)
+3. **Right-click** anywhere on the canvas
+4. The system will:
+   - Show your query point as a **yellow dot**
+   - Highlight the nearest site with a **green circle**
+   - Draw a **dashed line** connecting them
+   - Display the **site index and distance**
+5. Hover your mouse to see real-time nearest site information in the status bar
+
+**Technical Details:**
+- **Grid Resolution**: 2px cells = 300×300 grid = 90,000 cells for 600×600 canvas
+- **Memory Usage**: ~360KB for grid storage (very efficient!)
+- **Build Time**: O(n × grid_cells) one-time preprocessing
+- **Query Time**: O(1) constant time lookup
+- **Accuracy**: Perfect within grid resolution (±1 pixel)
+
+**Example Use Case:**
+```
+Scenario: Emergency services optimization
+- Red dots: Hospital locations (Voronoi sites)
+- User clicks anywhere in the city (query point)
+- System instantly shows nearest hospital and distance
+- Critical for emergency response time optimization
+```
 
 ## Algorithm
 
