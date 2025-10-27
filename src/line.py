@@ -51,7 +51,7 @@ class Line:
     
     def findRay2Points(self):
         d = 99999
-        # print(f'移動量 x: {d * unit_v[0]}, y: {d * unit_v[1]}')
+        # print(f'Movement delta x: {d * unit_v[0]}, y: {d * unit_v[1]}')
         v = self.vertiVectors
         p1,p2 = (self.center[0] + d * v[0], self.center[1] + d * v[1]), (self.center[0] - d * v[0], self.center[1] - d * v[1])
         return sorted([p1,p2], key=lambda p : p[1])

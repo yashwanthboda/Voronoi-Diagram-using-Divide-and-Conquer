@@ -35,7 +35,7 @@ def divide(points : list, pointNum: int):
     avg_x=0
     for p in points:
         avg_x+=(p[0]/pointNum)
-    print("中心x:", avg_x)
+    print("Center x:", avg_x)
     points.sort(key=lambda p: (p[0], p[1]))
     if len(points[:pointNum//2])==len(points[pointNum//2:]):
         return points[:pointNum//2], points[pointNum//2:]
@@ -56,10 +56,10 @@ def merge(cvhL : list, cvhR : list, linesL, linesR, canvas):
     lines = linesL+linesR
 
     cvhL_lines, cvhR_lines = [Line(cvhL[i], cvhL[nextIndex(i,cvhL)], isConvexHull=True) for i in range(len(cvhL))], [Line(cvhR[i], cvhR[nextIndex(i,cvhR)], isConvexHull=True) for i in range(len(cvhR))]
-    history_lines.append([])  #停留一步
+    history_lines.append([])  # pause for one step
     history_cvhlines.append(copy.deepcopy(cvhL_lines))
 
-    history_lines.append([]) #停留一步
+    history_lines.append([]) # pause for one step
     history_cvhlines.append(copy.deepcopy(cvhR_lines))
 
     cvh_lines, cvh, lp, rp, llp, lrp = mergeConvexHull(cvhL, cvhR) # upperTengent: [lp,rp], lowerTengent: [llp,lrp]
@@ -72,35 +72,35 @@ def merge(cvhL : list, cvhR : list, linesL, linesR, canvas):
 
     LowerTengentLine = Line(llp, lrp, isHyper=1)
 
-    print("\n上切線：",lp,rp,"\n下切線：",llp,lrp,'\n')
+    print("\nUpper tangent:",lp,rp,"\nLower tangent:",llp,lrp,'\n')
     while 1:
-        print("切線: ",lp,rp)
+        print("Tangent:",lp,rp)
         hyperplaneline = Line(lp,rp,isHyper=True)
         history_hyperplane.append(hyperplaneline)
         pairs = getIntersections(hyperplaneline, lines, history_intersection) # [((x,y),idx),((x,y),idx), ...]
-        if len(pairs)==0 or (lp == llp and rp == lrp) : # 若提早遇到沒交點 必差下切線 下切線也不會有跟其他中垂線的交點
-            #FAILED approach 1 新終點 為 離最初hyperplane的兩點距離較遠者
+        if len(pairs)==0 or (lp == llp and rp == lrp) : # If no intersections appear early, fall back to the lower tangent which will not intersect other bisectors
+            #FAILED approach 1: choose the endpoint farther from the initial hyperplane
                 # side1 = cal_length(history_hyperplane[0].points[0], LowerTengentLine.points[0]) + cal_length(history_hyperplane[0].points[1], LowerTengentLine.points[0])
                 # side2 = cal_length(history_hyperplane[0].points[0], LowerTengentLine.points[1]) + cal_length(history_hyperplane[0].points[1], LowerTengentLine.points[1])
                 # LowerTengent_target_side = 1 if side1 < side2 else 0
                 # reviseLineByKnown2Points(LowerTengentLine,a=history_intersection[-1],b=LowerTengentLine.canvasLine[LowerTengent_target_side])
-            #FAILED approach 2 重新用內積找到離hyperplane進入點較遠的 即為離開那側 排序至LowerTengentLine.canvasLine[1]
+            #FAILED approach 2: use dot products to find the farther entry point from the hyperplane and set it as LowerTengentLine.canvasLine[1]
                 # reviseCanvasLine([LowerTengentLine], 0, history_hyperplane[-2].canvasLine[0], history_intersection[-1], history_hyperplane[-1].canvasLine[1], remain= False)
             reviseLineByKnown2Points(LowerTengentLine,a=history_intersection[-1],b=LowerTengentLine.canvasLine[1])
             hyperplane_result.append(LowerTengentLine)
             history_lines.append(copy.deepcopy(lines)+copy.deepcopy(hyperplane_result))
             break
-        pairs.sort(key= lambda pair : pair[0][1]) # sort by lower y value 原則上由上到下
-        print("可能的交點:",pairs)
+        pairs.sort(key= lambda pair : pair[0][1]) # sort by y value, top to bottom
+        print("Candidate intersections:",pairs)
         intersection, target_line, idx = pairs[0][0], lines[pairs[0][1]], pairs[0][1]
         history_intersection.append(intersection)
-        print(intersection,"加入history_intersection")
-        print("第一優先交點:",intersection,",兩點", lines[idx].points,"的中垂線")
+        print(intersection,"added to history_intersection")
+        print("Highest priority intersection:",intersection,", bisector of", lines[idx].points)
 
         # avoid duplicate intersection
         history_linesIdx.append(idx)
 
-        # 找下個hyperplane的兩點，以利於分割
+        # choose next hyperplane endpoints to continue splitting
         isLeft = True if target_line in linesL else False
         if isLeft:
             # print("lp: ", lp)
@@ -113,7 +113,7 @@ def merge(cvhL : list, cvhR : list, linesL, linesR, canvas):
             # print("points: ", target_line.points)
             # print("XOR: ", target_line.points.index(rp)^1)
             rp = target_line.points[target_line.points.index(rp)^1]
-        print("下一切線: ",lp,rp)
+        print("Next tangent:",lp,rp)
 
         reviseHyperLine(hyperplaneline, history_intersection) # revise hyperplane
         hyperplane_result.append(hyperplaneline)
@@ -123,11 +123,11 @@ def merge(cvhL : list, cvhR : list, linesL, linesR, canvas):
 
 
     hascutBorder = []
-    # 消中垂線
+    # clip bisectors
     i = 0 # hyper id
     for idx in history_linesIdx:
-        print("兩點",lines[idx].points,"的中垂線\ni =",i)
-        print("hyper1起點:",history_hyperplane[i].canvasLine[0],", hyper2終點:",history_hyperplane[i+1].canvasLine[1])
+        print("Bisector of",lines[idx].points,"\ni =",i)
+        print("Hyperplane start:",history_hyperplane[i].canvasLine[0],", next hyperplane end:",history_hyperplane[i+1].canvasLine[1])
         hascutBorder.append(reviseCanvasLine(lines, idx, history_hyperplane[i].canvasLine[0], history_intersection[i],  history_hyperplane[i+1].canvasLine[1], remain= True))
         i+=1
     for p in hascutBorder:
@@ -153,10 +153,10 @@ def mergeConvexHull(cvhL,cvhR):
 
     print("in mergeConvexHull cvhL", cvhL)
     print("in mergeConvexHull cvhR", cvhR)
-    print("in mergeConvexHull 上切:", upL, upR)
-    print("in mergeConvexHull 下切:", lowL, lowR)
+    print("mergeConvexHull upper tangent:", upL, upR)
+    print("mergeConvexHull lower tangent:", lowL, lowR)
 
-    # 從 lowL (左側底) 開始，沿左側凸包逆時針到 upL（包含）
+    # walk the left hull counterclockwise from lowL up to and including upL
     i = i_lowL
     merged_cvh.append(cvhL[i])
     while i != i_upL:
@@ -164,7 +164,7 @@ def mergeConvexHull(cvhL,cvhR):
         # i = len(cvhL)-1 if i-1<0 else i-1
         merged_cvh.append(cvhL[i])
 
-    # 從 upR 開始，沿右側凸包逆時針到 lowR（包含）
+    # walk the right hull counterclockwise from upR down to and including lowR
     i = i_upR
     merged_cvh.append(cvhR[i])
     while i != i_lowR:
@@ -183,11 +183,11 @@ def findTangent(pointsL, pointsR, isUpper=1):
     lp,rp = max(pointsL, key=lambda p: (p[0], p[1])), min(pointsR, key=lambda p: (p[0], -p[1]))
     # print("in findtengent: ",lp,rp)
 
-    orderL = pointsL[::-1] if isUpper else pointsL[:] #上切線 ： 左逆時針,右順時針
-    orderR = pointsR[:] if isUpper else pointsR[::-1] #下切線 ： 左順時針,右逆時針
+    orderL = pointsL[::-1] if isUpper else pointsL[:] # upper tangent: left CCW, right CW
+    orderR = pointsR[:] if isUpper else pointsR[::-1] # lower tangent: left CW, right CCW
 
-    # print("上切線",isUpper, " orderL:", orderL)
-    # print("上切線",isUpper, " orderR:", orderR)
+    # print("Upper tangent",isUpper, " orderL:", orderL)
+    # print("Upper tangent",isUpper, " orderR:", orderR)
 
     iL,iR = orderL.index(lp), orderR.index(rp)
 
@@ -215,7 +215,7 @@ def cal_crossprod(a, b, c): #Vab to Vac
     vA = b[0] - a[0], b[1] - a[1]
     vB = c[0] - a[0], c[1] - a[1]
     cross = vA[0]*vB[1]-vB[0]*vA[1]
-    # 外積
+    # cross product
     # va = (ax, ay), vb = (bx, by)
     # va x vb = | ax ay |
     #           | bx by | = ax*by-bx*ay
@@ -228,7 +228,7 @@ def isClockwise(a, b, c):
     elif cross < 0:
         return 0
     else:
-        return -1 #共線（角度為0或180度）
+        return -1 # colinear (angle is 0 or 180 degrees)
 
 def nextIndex(idx, li):
     return (idx+1) % len(li)
@@ -236,14 +236,14 @@ def nextIndex(idx, li):
 def chooseEndPoint(p1, p2, p3, p4):
     cross1 = cal_crossprod(p1, p2, p3)
     cross2 = cal_crossprod(p1, p2, p4)
-    # cross > 0 => 逆時針，選擇轉彎角度小的那個
+    # cross > 0 => counterclockwise, choose the smaller turn
     if cross1 > 0 and cross2 <= 0:
         return p3
     elif cross2 > 0 and cross1 <= 0:
         return p4
-    elif cross1 > 0 and cross2 > 0: # 兩個都逆時針 選旋轉得較少角度較小者
+    elif cross1 > 0 and cross2 > 0: # both counterclockwise, pick the smaller rotation
         return p3 if cross1 < cross2 else p4
-    else:                           # 都順時針或共線，也選轉得較少的那個
+    else:                           # both clockwise or colinear, choose the smaller rotation
         return p3 if abs(cross1) < abs(cross2) else p4
 
 def cal_length(p1, p2):
@@ -269,11 +269,11 @@ def solveThreeParallel(threePoints : ThreePoints, convexhull) -> list[Line]:
 
 def solveCircumcenter(threePoints : ThreePoints):
     no_circumcenter = threePoints.isThreeParallel
-    print(f'存在外心: {not no_circumcenter}')
-    # print(f'逆:{threePoints.points}')
+    print(f'Circumcenter exists: {not no_circumcenter}')
+    # print(f'Counterclockwise order:{threePoints.points}')
     if not no_circumcenter:
         circumcenter = threePoints.circumcenter
-        print(f'外心: {circumcenter}')
+        print(f'Circumcenter: {circumcenter}')
         return cut(threePoints, circumcenter)
     return []
 
@@ -302,26 +302,26 @@ def getIntersections(line1 : Line, lines: list[Line], history_intersection):
     for i, line in enumerate(lines):
         p2, m2 = line.center, line.verticalSlope
         x, y = getIntersection(p1,m1,p2,m2)
-        if line.erase: # 已被消線
+        if line.erase: # already removed
             continue
-        if len(history_intersection) and (y < history_intersection[-1][1] and not isSameValue(y,history_intersection[-1][1])): # hyperplane 交點為一路往下
-            print("在前交點上方",x, y)
+        if len(history_intersection) and (y < history_intersection[-1][1] and not isSameValue(y,history_intersection[-1][1])): # hyperplane intersections should move downward
+            print("Above previous intersection",x, y)
             continue
         if len(history_intersection) and isSamePoint((x,y), history_intersection[-1]):
-            print("剛處理過的點，去除，否則無限迴圈",x, y)
+            print("Already processed this intersection; skip to avoid infinite loop",x, y)
             continue
         if (x,y) == (float('inf'),float('inf')):
-            print("平行無交點",x, y)
+            print("Parallel, no intersection",x, y)
             continue
         if not on_segment((x,y),line.canvasLine):
-            print(f"未在線段上： {(x,y)}未在{line.canvasLine}線段上")
+            print(f"Not on segment: {(x,y)} not on {line.canvasLine}")
             continue
         pairs.append(((x,y),i)) # tuple(intersection,idx)
     return pairs
 
 def getIntersection(p1, m1, p2, m2):
     if m1 == m2:
-        return (float('inf'),float('inf'))  # 平行或重合，無交點
+        return (float('inf'),float('inf'))  # parallel or coincident, no intersection
     x = (m1 * p1[0] - m2 * p2[0] + p2[1] - p1[1]) / (m1 - m2)
     y = m1 * (x - p1[0]) + p1[1]
     return (x, y)
@@ -350,7 +350,7 @@ def reviseLineByKnown2Points(line, a=None, b=None):
     if a and b:
         line.canvasLine = [a, b]
     return
-    # 保持線段的順序 新交點再後方(index 1)
+    # keep segment order; place new intersection at index 1
 
 def reviseHyperLine(line, history_intersection):
     if len(history_intersection) == 1:
@@ -360,13 +360,13 @@ def reviseHyperLine(line, history_intersection):
     return
 
 def reviseCanvasLine(lines, i, hyper1point_upper, intersection, hyper2point_lower, remain=True):
-    # 若hyperplane轉向 與 向邊界點轉向相同 則該方向須去除(改成交點與另一側邊界連線)
+    # If the hyperplane turns in the same direction as the boundary edge, remove that side (connect to the opposite boundary)
     cross_hyper = isClockwise(hyper1point_upper, intersection, hyper2point_lower) # v1(upper point to intersection), v2(intersection to lower point)
     cross_upper_border1 = isClockwise(hyper1point_upper,intersection,lines[i].canvasLine[0])
     cross_upper_border2 = isClockwise(hyper1point_upper,intersection,lines[i].canvasLine[1])
-    # print("H1->H2方向:",cross_hyper)
-    # print(f"H1->{line.canvasLine[0]}方向:", cross_upper_border1)
-    # print(f"H1->{line.canvasLine[1]}方向:", cross_upper_border2)
+    # print("Direction H1->H2:",cross_hyper)
+    # print(f"Direction H1->{line.canvasLine[0]}:", cross_upper_border1)
+    # print(f"Direction H1->{line.canvasLine[1]}:", cross_upper_border2)
     # cpy = set(line.canvasLine[:])
     # print("Before Cut:", cpy)
     cpy = lines[i].canvasLine[:]
