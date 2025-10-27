@@ -24,7 +24,8 @@ def draw_line(canvas, p1, p2):
 class Voronoi:
     def __init__(self, root):
         self.root = root
-        self.root.title("Voronoi")
+        self.root.title("Voronoi Diagram Visualizer")
+        self.root.configure(bg='#f0f0f0')
         self.points = []
         self.data = []
         self.data_index = 0
@@ -36,7 +37,7 @@ class Voronoi:
         self.stepMode = False
         self.merge_history = []
         self.mergeidx = 0
-        
+        self.autoplay = False
         # Nearest site query feature
         self.query_mode = False
         self.voronoi_grid = None
@@ -46,36 +47,94 @@ class Voronoi:
         self.highlighted_site = None
         self.highlight_objects = []
 
-        # create canvas
-        self.canvas = tk.Canvas(self.root, width=600, height=600, bg="white")
+        self.autoplay_speed = 500  # milliseconds between steps
+
+        # Title Label
+        title_frame = tk.Frame(self.root, bg='#2c3e50', height=50)
+        title_frame.pack(fill='x', pady=(0, 10))
+        title_label = tk.Label(title_frame, text="🔷 Voronoi Diagram Visualizer 🔷", 
+                              font=("Arial", 16, "bold"), bg='#2c3e50', fg='white')
+        title_label.pack(pady=10)
+
+        # create canvas with border
+        canvas_frame = tk.Frame(self.root, bg='#34495e', bd=2, relief='solid')
+        canvas_frame.pack(padx=10, pady=5)
+        self.canvas = tk.Canvas(canvas_frame, width=600, height=600, bg="white", 
+                               highlightthickness=0)
         self.canvas.pack()
 
+        self.canvas.pack()
+
+        # Button frame
+        button_frame = tk.Frame(self.root, bg='#f0f0f0')
+        button_frame.pack(pady=10)
+
+        # Button styling
+        btn_config = {
+            'font': ("Arial", 10, "bold"),
+            'bd': 0,
+            'relief': 'flat',
+            'padx': 15,
+            'pady': 8,
+            'cursor': 'hand2'
+        }
+
         # clear button
-        self.clear_button = tk.Button(self.root, text="Clear", font=("consolas"), command=self.clear_canvas)
-        self.clear_button.pack(side='left', padx=3, pady=3)
+        self.clear_button = tk.Button(button_frame, text="🗑️ Clear", 
+                                      bg='#e74c3c', fg='white', 
+                                      activebackground='#c0392b',
+                                      command=self.clear_canvas, **btn_config)
+        self.clear_button.pack(side='left', padx=3)
 
         # read data button
-        self.read_data_button = tk.Button(self.root, text="Read Data", font=("consolas"), command = self.read_data)
-        self.read_data_button.pack(side='left', padx=3, pady=3)
+        self.read_data_button = tk.Button(button_frame, text="📂 Read Data", 
+                                          bg='#3498db', fg='white',
+                                          activebackground='#2980b9',
+                                          command=self.read_data, **btn_config)
+        self.read_data_button.pack(side='left', padx=3)
 
         # random points button
-        self.random_button = tk.Button(self.root, text="Random Points", font=("consolas"), command=self.generate_random_points)
-        self.random_button.pack(side='left', padx=3, pady=3)
+        self.random_button = tk.Button(button_frame, text="🎲 Random Points", 
+                                       bg='#9b59b6', fg='white',
+                                       activebackground='#8e44ad',
+                                       command=self.generate_random_points, **btn_config)
+        self.random_button.pack(side='left', padx=3)
 
         # execute button
-        self.execute_button = tk.Button(self.root, text="Execute", font=("consolas"), command=self.exeDraw)
+        self.execute_button = tk.Button(button_frame, text="▶️ Execute", 
+                                        bg='#27ae60', fg='white',
+                                        activebackground='#229954',
+                                        command=self.exeDraw, **btn_config)
 
-        # execute button
-        self.next_button = tk.Button(self.root, text="Step", font=("consolas"), command=self.stepDraw)
+        # step button
+        self.next_button = tk.Button(button_frame, text="⏭️ Step", 
+                                     bg='#16a085', fg='white',
+                                     activebackground='#138d75',
+                                     command=self.stepDraw, **btn_config)
+
+        # auto-play button
+        self.autoplay_button = tk.Button(button_frame, text="▶️ Auto Play", 
+                                         bg='#f39c12', fg='white',
+                                         activebackground='#d68910',
+                                         command=self.toggle_autoplay, **btn_config)
 
         # read next data button
-        self.read_next_data_button = tk.Button(self.root, text="Next Data", font=("consolas"), command=self.read_next_data)
+        self.read_next_data_button = tk.Button(button_frame, text="⏩ Next Data", 
+                                              bg='#34495e', fg='white',
+                                              activebackground='#2c3e50',
+                                              command=self.read_next_data, **btn_config)
 
         # query nearest site button
         self.query_button = tk.Button(self.root, text="Query Mode", font=("consolas"), command=self.toggle_query_mode, bg='lightgray')
         
-        self.position_label = tk.Label(text="", font=("consolas"))
-        self.position_label.pack(side='right', pady=3)
+        # Status bar
+        status_frame = tk.Frame(self.root, bg='#ecf0f1', relief='sunken', bd=1)
+        status_frame.pack(side='bottom', fill='x')
+        
+        self.position_label = tk.Label(status_frame, text="", 
+                                      font=("Consolas", 9), 
+                                      bg='#ecf0f1', fg='#2c3e50')
+        self.position_label.pack(side='right', padx=10, pady=5)
 
         # binding mouse click to draw points
         self.canvas.bind("<Motion>", self.update_position)
@@ -89,8 +148,10 @@ class Voronoi:
             
         self.read_data_button.pack_forget()
         self.read_next_data_button.pack_forget()
-        self.execute_button.pack(side='left')
-        self.next_button.pack(side='left')
+        self.random_button.pack_forget()
+        self.execute_button.pack(side='left', padx=3)
+        self.next_button.pack(side='left', padx=3)
+        self.autoplay_button.pack(side='left', padx=3)
         self.points.append((event.x, event.y))
         self.draw_point(event.x, event.y)
         print(f'({event.x},{event.y})')
@@ -123,7 +184,8 @@ class Voronoi:
         self.read_next_data_button.pack_forget()
         self.random_button.pack_forget()
         self.execute_button.pack(side='left', padx=3)
-        self.next_button.pack(side='left', padx=3, pady=3)
+        self.next_button.pack(side='left', padx=3)
+        self.autoplay_button.pack(side='left', padx=3)
         
         # Generate n random points with some margin from borders
         margin = 30
@@ -145,13 +207,16 @@ class Voronoi:
     def clear_canvas(self):
         self.canvas.delete("all")
         self.points.clear()
+        self.autoplay = False
+        self.autoplay_button.config(text="▶️ Auto Play", bg='#f39c12')
         # Reset buttons
         self.execute_button.pack_forget()
         self.next_button.pack_forget()
+        self.autoplay_button.pack_forget()
         self.read_next_data_button.pack_forget()
         self.query_button.pack_forget()
-        self.read_data_button.pack(side='left', padx=3, pady=3)
-        self.random_button.pack(side='left', padx=3, pady=3)
+        self.read_data_button.pack(side='left', padx=3)
+        self.random_button.pack(side='left', padx=3)
         # Reset query mode state
         self.query_mode = False
         self.voronoi_grid = None
@@ -177,14 +242,16 @@ class Voronoi:
         self.cvh_history_t = 0
         self.stepMode = False
         self.execute_button.pack(side='left', padx=3)
-        self.next_button.pack(side='left', padx=3, pady=3)
+        self.next_button.pack(side='left', padx=3)
+        self.autoplay_button.pack(side='left', padx=3)
         n = int(self.data[self.data_index])
         if n == 0:
             print('讀入點數為零，檔案測試停止')
-            self.read_data_button.pack(side='left', padx=3, pady=3)
+            self.read_data_button.pack(side='left', padx=3)
             self.read_next_data_button.pack_forget()
             self.execute_button.pack_forget()
             self.next_button.pack_forget()
+            self.autoplay_button.pack_forget()
             return
 
         print(f'點數：{n}')
@@ -269,11 +336,45 @@ class Voronoi:
                 self.build_voronoi_grid()
                 # Show query button
                 self.query_button.pack(side='left', padx=3, pady=3)
+            self.autoplay = False
+            self.autoplay_button.config(text="▶️ Auto Play", bg='#f39c12')
+            # Display completion message
+            self.show_completion_message()
+        elif self.autoplay:
+            # Continue auto-playing
+            self.root.after(self.autoplay_speed, self.stepDraw)
         
+    def toggle_autoplay(self):
+        """Toggle auto-play mode"""
+        self.autoplay = not self.autoplay
+        if self.autoplay:
+            self.autoplay_button.config(text="⏸️ Pause", bg='#e67e22')
+            # Start auto-play
+            if not self.stepMode:
+                self.stepDraw()
+            else:
+                self.root.after(self.autoplay_speed, self.stepDraw)
+        else:
+            self.autoplay_button.config(text="▶️ Auto Play", bg='#f39c12')
+    
     def clear_lines(self):
         self.canvas.delete("all")
         for p in self.points:
             self.draw_point(p[0], p[1])
+    
+    def show_completion_message(self):
+        """Display completion message on canvas"""
+        message = "✅ Voronoi Diagram Created Successfully!"
+        # Display message at top center of canvas with background
+        # Create a rounded rectangle background that covers full text
+        self.canvas.create_rectangle(80, 10, 520, 40, 
+                                    fill='#2ecc71', outline='#27ae60', 
+                                    width=2, tags="completion_msg")
+        self.canvas.create_text(300, 25, text=message, 
+                               font=("Arial", 12, "bold"), 
+                               fill="white",
+                               tags="completion_msg")
+        print(message)
     
     def update_position(self, event):
         x, y = event.x, event.y
