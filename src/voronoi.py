@@ -1,7 +1,9 @@
 from read import readInput
 from algo import *
 import tkinter as tk
+from tkinter import simpledialog
 from line import *
+import random
 
 r = 3
 color_idx = 0
@@ -47,6 +49,10 @@ class Voronoi:
         self.read_data_button = tk.Button(self.root, text="Read Data", font=("consolas"), command = self.read_data)
         self.read_data_button.pack(side='left', padx=3, pady=3)
 
+        # random points button
+        self.random_button = tk.Button(self.root, text="Random Points", font=("consolas"), command=self.generate_random_points)
+        self.random_button.pack(side='left', padx=3, pady=3)
+
         # execute button
         self.execute_button = tk.Button(self.root, text="Execute", font=("consolas"), command=self.exeDraw)
 
@@ -82,11 +88,52 @@ class Voronoi:
         elif y > 300 and x>300:
             bx,by = -60,-15
         self.canvas.create_text(x+bx, y+by, text=f"({int(x)},{int(y)})", anchor="w", font=("consolas", 8))
+    
+    def generate_random_points(self):
+        """Generate n random points on the canvas"""
+        # Ask user for number of points
+        n = simpledialog.askinteger("Random Points", "Enter number of vertices (n):", 
+                                     minvalue=1, maxvalue=100)
+        if n is None:  # User cancelled
+            return
+        
+        # Clear existing points
+        self.clear_canvas()
+        self.points.clear()
+        
+        # Hide read data buttons and show execute buttons
+        self.read_data_button.pack_forget()
+        self.read_next_data_button.pack_forget()
+        self.random_button.pack_forget()
+        self.execute_button.pack(side='left', padx=3)
+        self.next_button.pack(side='left', padx=3, pady=3)
+        
+        # Generate n random points with some margin from borders
+        margin = 30
+        for i in range(n):
+            x = random.randint(margin, 600 - margin)
+            y = random.randint(margin, 600 - margin)
+            # Check for duplicates
+            while (x, y) in self.points:
+                x = random.randint(margin, 600 - margin)
+                y = random.randint(margin, 600 - margin)
+            
+            self.points.append((x, y))
+            self.draw_point(x, y)
+            print(f'Generated point {i+1}: ({x},{y})')
+        
+        print(f'Successfully generated {n} random points')
         
     
     def clear_canvas(self):
         self.canvas.delete("all")
         self.points.clear()
+        # Reset buttons
+        self.execute_button.pack_forget()
+        self.next_button.pack_forget()
+        self.read_next_data_button.pack_forget()
+        self.read_data_button.pack(side='left', padx=3, pady=3)
+        self.random_button.pack(side='left', padx=3, pady=3)
 
     def read_data(self):
         self.data = readInput()
