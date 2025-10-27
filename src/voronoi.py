@@ -26,6 +26,19 @@ class Voronoi:
         self.root = root
         self.root.title("Voronoi Diagram Visualizer")
         self.root.configure(bg='#f0f0f0')
+        
+        # Set minimum window size and make it responsive
+        self.root.minsize(900, 700)
+        
+        # Get screen dimensions
+        screen_width = self.root.winfo_screenwidth()
+        screen_height = self.root.winfo_screenheight()
+        
+        # Calculate appropriate canvas size based on screen
+        max_canvas_size = min(screen_height - 300, 800)  # Leave room for buttons and title
+        self.canvas_width = max_canvas_size
+        self.canvas_height = max_canvas_size
+        
         self.points = []
         self.data = []
         self.data_index = 0
@@ -42,8 +55,6 @@ class Voronoi:
         self.query_mode = False
         self.voronoi_grid = None
         self.grid_resolution = 2  # pixel size of each grid cell (lower = more accurate)
-        self.canvas_width = 800
-        self.canvas_height = 800
         self.highlighted_site = None
         self.highlight_objects = []
 
@@ -51,38 +62,42 @@ class Voronoi:
 
         # Title Label
         title_frame = tk.Frame(self.root, bg='#2c3e50', height=50)
-        title_frame.pack(fill='x', pady=(0, 10))
+        title_frame.pack(fill='x', pady=(0, 5))
         title_label = tk.Label(title_frame, text="Voronoi Diagram Visualizer", 
-                              font=("Arial", 16, "bold"), bg='#2c3e50', fg='white')
-        title_label.pack(pady=10)
+                              font=("Arial", 14, "bold"), bg='#2c3e50', fg='white')
+        title_label.pack(pady=8)
 
         # Status/Message frame (above canvas)
-        self.message_frame = tk.Frame(self.root, bg='#f0f0f0', height=40)
+        self.message_frame = tk.Frame(self.root, bg='#f0f0f0', height=35)
         self.message_frame.pack(fill='x', padx=10)
         self.message_label = tk.Label(self.message_frame, text="", 
-                                      font=("Arial", 12, "bold"), 
+                                      font=("Arial", 11, "bold"), 
                                       bg='#f0f0f0', fg='#2c3e50',
-                                      pady=10)
+                                      pady=8)
         self.message_label.pack()
 
         # create canvas with border
         canvas_frame = tk.Frame(self.root, bg='#34495e', bd=2, relief='solid')
         canvas_frame.pack(padx=10, pady=5)
-        self.canvas = tk.Canvas(canvas_frame, width=800, height=800, bg="white", 
+        self.canvas = tk.Canvas(canvas_frame, width=self.canvas_width, height=self.canvas_height, bg="white", 
                                highlightthickness=0)
         self.canvas.pack()
 
-        # Button frame
-        button_frame = tk.Frame(self.root, bg='#f0f0f0')
-        button_frame.pack(pady=10)
+        # Button container frame - centers the buttons
+        button_container = tk.Frame(self.root, bg='#f0f0f0')
+        button_container.pack(pady=8, fill='x')
+        
+        # Button frame - holds the actual buttons
+        button_frame = tk.Frame(button_container, bg='#f0f0f0')
+        button_frame.pack()
 
-        # Button styling
+        # Button styling - slightly smaller for better fit
         btn_config = {
-            'font': ("Arial", 10, "bold"),
+            'font': ("Arial", 9, "bold"),
             'bd': 0,
             'relief': 'flat',
-            'padx': 15,
-            'pady': 8,
+            'padx': 12,
+            'pady': 6,
             'cursor': 'hand2'
         }
 
@@ -91,21 +106,21 @@ class Voronoi:
                                       bg='#e74c3c', fg='white', 
                                       activebackground='#c0392b',
                                       command=self.clear_canvas, **btn_config)
-        self.clear_button.pack(side='left', padx=3)
+        self.clear_button.pack(side='left', padx=1)
 
         # read data button
-        self.read_data_button = tk.Button(button_frame, text="📂 Read Data", 
+        self.read_data_button = tk.Button(button_frame, text="📂 Read", 
                                           bg='#3498db', fg='white',
                                           activebackground='#2980b9',
                                           command=self.read_data, **btn_config)
-        self.read_data_button.pack(side='left', padx=3)
+        self.read_data_button.pack(side='left', padx=1)
 
         # random points button
-        self.random_button = tk.Button(button_frame, text="🎲 Random Points", 
+        self.random_button = tk.Button(button_frame, text="🎲 Random", 
                                        bg='#9b59b6', fg='white',
                                        activebackground='#8e44ad',
                                        command=self.generate_random_points, **btn_config)
-        self.random_button.pack(side='left', padx=3)
+        self.random_button.pack(side='left', padx=1)
 
         # execute button - Run complete diagram
         self.execute_button = tk.Button(button_frame, text="▶️ Run", 
@@ -114,25 +129,25 @@ class Voronoi:
                                         command=self.exeDraw, **btn_config)
 
         # step button - Step through construction
-        self.next_button = tk.Button(button_frame, text="⏩ Next Step", 
+        self.next_button = tk.Button(button_frame, text="⏩ Step", 
                                      bg='#16a085', fg='white',
                                      activebackground='#138d75',
                                      command=self.stepDraw, **btn_config)
 
         # auto-play button
-        self.autoplay_button = tk.Button(button_frame, text="▶️ Auto Play", 
+        self.autoplay_button = tk.Button(button_frame, text="▶️ Auto", 
                                          bg='#f39c12', fg='white',
                                          activebackground='#d68910',
                                          command=self.toggle_autoplay, **btn_config)
 
         # read next data button - Load next test case
-        self.read_next_data_button = tk.Button(button_frame, text="📄 Next Test", 
+        self.read_next_data_button = tk.Button(button_frame, text="📄 Next", 
                                               bg='#34495e', fg='white',
                                               activebackground='#2c3e50',
                                               command=self.read_next_data, **btn_config)
 
         # query nearest site button - Better positioned and styled
-        self.query_button = tk.Button(button_frame, text="🔍 Find Site", 
+        self.query_button = tk.Button(button_frame, text="🔍 Find", 
                                       bg='#e056fd', fg='white',
                                       activebackground='#c44ddb',
                                       command=self.toggle_query_mode, **btn_config)
@@ -159,9 +174,9 @@ class Voronoi:
         self.read_data_button.pack_forget()
         self.read_next_data_button.pack_forget()
         self.random_button.pack_forget()
-        self.execute_button.pack(side='left', padx=3)
-        self.next_button.pack(side='left', padx=3)
-        self.autoplay_button.pack(side='left', padx=3)
+        self.execute_button.pack(side='left', padx=1)
+        self.next_button.pack(side='left', padx=1)
+        self.autoplay_button.pack(side='left', padx=1)
         self.points.append((event.x, event.y))
         self.draw_point(event.x, event.y)
         print(f'({event.x},{event.y})')
@@ -193,9 +208,9 @@ class Voronoi:
         self.read_data_button.pack_forget()
         self.read_next_data_button.pack_forget()
         self.random_button.pack_forget()
-        self.execute_button.pack(side='left', padx=3)
-        self.next_button.pack(side='left', padx=3)
-        self.autoplay_button.pack(side='left', padx=3)
+        self.execute_button.pack(side='left', padx=1)
+        self.next_button.pack(side='left', padx=1)
+        self.autoplay_button.pack(side='left', padx=1)
         
         # Generate n random points with some margin from borders
         margin = 30
@@ -218,7 +233,7 @@ class Voronoi:
         self.canvas.delete("all")
         self.points.clear()
         self.autoplay = False
-        self.autoplay_button.config(text="▶️ Auto Play", bg='#f39c12')
+        self.autoplay_button.config(text="▶️ Auto", bg='#f39c12')
         # Clear completion message
         self.message_label.config(text="", bg='#f0f0f0')
         # Reset buttons
@@ -227,8 +242,8 @@ class Voronoi:
         self.autoplay_button.pack_forget()
         self.read_next_data_button.pack_forget()
         self.query_button.pack_forget()
-        self.read_data_button.pack(side='left', padx=3)
-        self.random_button.pack(side='left', padx=3)
+        self.read_data_button.pack(side='left', padx=1)
+        self.random_button.pack(side='left', padx=1)
         # Reset query mode state
         self.query_mode = False
         self.voronoi_grid = None
@@ -241,7 +256,7 @@ class Voronoi:
         self.data_index = 0
         self.read_data_button.pack_forget()
         self.random_button.pack_forget()
-        self.read_next_data_button.pack(side='left', padx=3)
+        self.read_next_data_button.pack(side='left', padx=1)
         self.read_next_data()
         
 
@@ -256,16 +271,16 @@ class Voronoi:
         self.stepMode = False
         
         # Show control buttons
-        self.read_next_data_button.pack(side='left', padx=3)
-        self.execute_button.pack(side='left', padx=3)
-        self.next_button.pack(side='left', padx=3)
-        self.autoplay_button.pack(side='left', padx=3)
+        self.read_next_data_button.pack(side='left', padx=1)
+        self.execute_button.pack(side='left', padx=1)
+        self.next_button.pack(side='left', padx=1)
+        self.autoplay_button.pack(side='left', padx=1)
         
         n = int(self.data[self.data_index])
         if n == 0:
             print('讀入點數為零，檔案測試停止')
-            self.read_data_button.pack(side='left', padx=3)
-            self.random_button.pack(side='left', padx=3)
+            self.read_data_button.pack(side='left', padx=1)
+            self.random_button.pack(side='left', padx=1)
             self.read_next_data_button.pack_forget()
             self.execute_button.pack_forget()
             self.next_button.pack_forget()
@@ -311,7 +326,7 @@ class Voronoi:
         if self.voronoi_grid is None and len(self.points) >= 2:
             self.build_voronoi_grid()
             # Show query button
-            self.query_button.pack(side='left', padx=3, pady=3)
+            self.query_button.pack(side='left', padx=1)
 
     def stepDraw(self):
         if not self.stepMode:
@@ -357,9 +372,9 @@ class Voronoi:
             if self.voronoi_grid is None and len(self.points) >= 2:
                 self.build_voronoi_grid()
                 # Show query button
-                self.query_button.pack(side='left', padx=3, pady=3)
+                self.query_button.pack(side='left', padx=1)
             self.autoplay = False
-            self.autoplay_button.config(text="▶️ Auto Play", bg='#f39c12')
+            self.autoplay_button.config(text="▶️ Auto", bg='#f39c12')
             # Display completion message
             self.show_completion_message()
         elif self.autoplay:
@@ -377,7 +392,7 @@ class Voronoi:
             else:
                 self.root.after(self.autoplay_speed, self.stepDraw)
         else:
-            self.autoplay_button.config(text="▶️ Auto Play", bg='#f39c12')
+            self.autoplay_button.config(text="▶️ Auto", bg='#f39c12')
     
     def clear_lines(self):
         self.canvas.delete("all")
