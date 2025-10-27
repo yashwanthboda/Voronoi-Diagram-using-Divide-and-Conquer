@@ -323,5 +323,5 @@ Use case: "Where is the closest hospital to this location?"
 ## 👨‍💻 Author
 
 **Yashwanth Boda**
-- GitHub: [@yashwanthboda](https://github.com/yashwanthboda)
+- GitHub: [@yashwanthboda](https://github.com/yashwanthboda), [@harsha-050](https://github.com/harsha-050), [@Chaitanya1104](https://github.com/Chaitanya1104)
 - Repository: [Voronoi-Diagram-using-Divide-and-Conquer](https://github.com/yashwanthboda/Voronoi-Diagram-using-Divide-and-Conquer)
