@@ -235,11 +235,23 @@ class Voronoi:
         self.history_t +=1
         if self.history_t >= len(self.history):
             self.stepMode = False
+            # Display completion message
+            self.show_completion_message()
         
     def clear_lines(self):
         self.canvas.delete("all")
         for p in self.points:
             self.draw_point(p[0], p[1])
+    
+    def show_completion_message(self):
+        """Display completion message on canvas"""
+        message = "Voronoi Diagram Created Successfully!"
+        # Display message at top center of canvas
+        self.canvas.create_text(300, 20, text=message, 
+                               font=("consolas", 12, "bold"), 
+                               fill="green",
+                               tags="completion_msg")
+        print(message)
     
     def update_position(self, event):
         x, y = event.x, event.y
