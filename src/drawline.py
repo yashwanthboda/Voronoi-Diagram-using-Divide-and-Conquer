@@ -15,12 +15,14 @@ color_list = [
 def draw_line(canvas, p1, p2, line):
     if line.erase:
         return
+    # Skip drawing convex hull lines
+    if line.isConvexHull:
+        return
     # global color_idx
     w =  2
     color = "#DC143C" if line.Lpart else "#1E90FF"
     color = "black" if line.isHyper else color#color_list[color_idx % len(color_list)]
     color = "#ADD8E6" if line.afterMerge else color
-    color = "#AFAFAF" if line.isConvexHull else color
     color = "#00FF00" if line.isTengent else color
     canvas.create_line(p1[0], p1[1], p2[0], p2[1], width=w, fill=color)
     # color_idx += 1
