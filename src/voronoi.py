@@ -36,6 +36,15 @@ class Voronoi:
         self.stepMode = False
         self.merge_history = []
         self.mergeidx = 0
+        
+        # Nearest site query feature
+        self.query_mode = False
+        self.voronoi_grid = None
+        self.grid_resolution = 2  # pixel size of each grid cell (lower = more accurate)
+        self.canvas_width = 600
+        self.canvas_height = 600
+        self.highlighted_site = None
+        self.highlight_objects = []
 
         # create canvas
         self.canvas = tk.Canvas(self.root, width=600, height=600, bg="white")
@@ -62,14 +71,22 @@ class Voronoi:
         # read next data button
         self.read_next_data_button = tk.Button(self.root, text="Next Data", font=("consolas"), command=self.read_next_data)
 
+        # query nearest site button
+        self.query_button = tk.Button(self.root, text="Query Mode", font=("consolas"), command=self.toggle_query_mode, bg='lightgray')
+        
         self.position_label = tk.Label(text="", font=("consolas"))
         self.position_label.pack(side='right', pady=3)
 
         # binding mouse click to draw points
         self.canvas.bind("<Motion>", self.update_position)
         self.canvas.bind("<Button-1>", self.draw_point_event)
+        self.canvas.bind("<Button-3>", self.query_nearest_site)  # Right-click for query
 
     def draw_point_event(self, event):
+        # If in query mode, don't add points
+        if self.query_mode:
+            return
+            
         self.read_data_button.pack_forget()
         self.read_next_data_button.pack_forget()
         self.execute_button.pack(side='left')
@@ -132,8 +149,14 @@ class Voronoi:
         self.execute_button.pack_forget()
         self.next_button.pack_forget()
         self.read_next_data_button.pack_forget()
+        self.query_button.pack_forget()
         self.read_data_button.pack(side='left', padx=3, pady=3)
         self.random_button.pack(side='left', padx=3, pady=3)
+        # Reset query mode state
+        self.query_mode = False
+        self.voronoi_grid = None
+        self.highlighted_site = None
+        self.highlight_objects.clear()
 
     def read_data(self):
         self.data = readInput()
@@ -196,6 +219,12 @@ class Voronoi:
         self.history_t = len(self.history)-1
         self.cvh_history_t = len(self.cvh_history)-1
         self.stepDraw()
+        
+        # Build grid for query mode after execution
+        if self.voronoi_grid is None and len(self.points) >= 2:
+            self.build_voronoi_grid()
+            # Show query button
+            self.query_button.pack(side='left', padx=3, pady=3)
 
     def stepDraw(self):
         if not self.stepMode:
@@ -235,6 +264,11 @@ class Voronoi:
         self.history_t +=1
         if self.history_t >= len(self.history):
             self.stepMode = False
+            # Build grid when step execution completes
+            if self.voronoi_grid is None and len(self.points) >= 2:
+                self.build_voronoi_grid()
+                # Show query button
+                self.query_button.pack(side='left', padx=3, pady=3)
         
     def clear_lines(self):
         self.canvas.delete("all")
@@ -243,4 +277,147 @@ class Voronoi:
     
     def update_position(self, event):
         x, y = event.x, event.y
-        self.position_label.config(text=f"Cursor : ({x}, {y})")
+        status = f"Cursor : ({x}, {y})"
+        
+        # If in query mode and grid is built, show nearest site
+        if self.query_mode and self.voronoi_grid is not None:
+            nearest_idx = self.query_grid(x, y)
+            if nearest_idx is not None:
+                nearest_site = self.points[nearest_idx]
+                dist = ((x - nearest_site[0])**2 + (y - nearest_site[1])**2)**0.5
+                status += f" | Nearest: Site {nearest_idx} ({int(nearest_site[0])},{int(nearest_site[1])}) - Dist: {dist:.1f}"
+        
+        self.position_label.config(text=status)
+    
+    def build_voronoi_grid(self):
+        """Build a 2D grid storing the nearest site index for each cell (O(1) query)"""
+        print("Building Voronoi query grid...")
+        
+        grid_w = self.canvas_width // self.grid_resolution
+        grid_h = self.canvas_height // self.grid_resolution
+        
+        # Initialize grid
+        self.voronoi_grid = [[None for _ in range(grid_w)] for _ in range(grid_h)]
+        
+        # For each grid cell, find the nearest site
+        for row in range(grid_h):
+            for col in range(grid_w):
+                # Convert grid coordinates to canvas coordinates (center of cell)
+                x = col * self.grid_resolution + self.grid_resolution / 2
+                y = row * self.grid_resolution + self.grid_resolution / 2
+                
+                # Find nearest site by brute force distance check
+                min_dist = float('inf')
+                nearest_idx = 0
+                
+                for idx, site in enumerate(self.points):
+                    dist = (x - site[0])**2 + (y - site[1])**2
+                    if dist < min_dist:
+                        min_dist = dist
+                        nearest_idx = idx
+                
+                self.voronoi_grid[row][col] = nearest_idx
+        
+        print(f"Grid built: {grid_h}x{grid_w} cells ({grid_h * grid_w} total)")
+        return self.voronoi_grid
+    
+    def query_grid(self, x, y):
+        """Query which site is nearest to point (x, y) in O(1) time"""
+        if self.voronoi_grid is None:
+            return None
+        
+        # Convert canvas coordinates to grid coordinates
+        col = int(x / self.grid_resolution)
+        row = int(y / self.grid_resolution)
+        
+        # Bounds check
+        grid_h = len(self.voronoi_grid)
+        grid_w = len(self.voronoi_grid[0]) if grid_h > 0 else 0
+        
+        if 0 <= row < grid_h and 0 <= col < grid_w:
+            return self.voronoi_grid[row][col]
+        return None
+    
+    def query_nearest_site(self, event):
+        """Handle right-click to query and highlight nearest site"""
+        if not self.query_mode:
+            return
+        
+        if self.voronoi_grid is None:
+            print("Please execute the Voronoi diagram first!")
+            return
+        
+        x, y = event.x, event.y
+        nearest_idx = self.query_grid(x, y)
+        
+        if nearest_idx is not None:
+            self.highlight_site(nearest_idx, (x, y))
+    
+    def highlight_site(self, site_idx, query_point):
+        """Highlight the nearest site and show visual feedback"""
+        # Clear previous highlights
+        for obj in self.highlight_objects:
+            self.canvas.delete(obj)
+        self.highlight_objects.clear()
+        
+        site = self.points[site_idx]
+        
+        # Draw query point
+        query_marker = self.canvas.create_oval(
+            query_point[0] - 5, query_point[1] - 5,
+            query_point[0] + 5, query_point[1] + 5,
+            fill='yellow', outline='orange', width=2
+        )
+        self.highlight_objects.append(query_marker)
+        
+        # Highlight the nearest site with a larger circle
+        highlight_circle = self.canvas.create_oval(
+            site[0] - 10, site[1] - 10,
+            site[0] + 10, site[1] + 10,
+            outline='green', width=3, fill=''
+        )
+        self.highlight_objects.append(highlight_circle)
+        
+        # Draw line from query to nearest site
+        line = self.canvas.create_line(
+            query_point[0], query_point[1],
+            site[0], site[1],
+            fill='green', width=2, dash=(4, 4)
+        )
+        self.highlight_objects.append(line)
+        
+        # Show distance label
+        dist = ((query_point[0] - site[0])**2 + (query_point[1] - site[1])**2)**0.5
+        label = self.canvas.create_text(
+            (query_point[0] + site[0]) / 2,
+            (query_point[1] + site[1]) / 2 - 10,
+            text=f"Site {site_idx}\nDist: {dist:.1f}",
+            font=("consolas", 10, "bold"),
+            fill='green'
+        )
+        self.highlight_objects.append(label)
+        
+        print(f"Query at ({query_point[0]:.0f}, {query_point[1]:.0f}) -> Nearest: Site {site_idx} at {site}, Distance: {dist:.2f}")
+    
+    def toggle_query_mode(self):
+        """Toggle between normal mode and query mode"""
+        if len(self.points) < 2:
+            print("Please add at least 2 points first!")
+            return
+        
+        self.query_mode = not self.query_mode
+        
+        if self.query_mode:
+            # Build grid if not already built
+            if self.voronoi_grid is None:
+                self.build_voronoi_grid()
+            
+            self.query_button.config(bg='lightgreen', text='Query Mode: ON')
+            print("Query mode ON: Right-click anywhere to find nearest site")
+        else:
+            self.query_button.config(bg='lightgray', text='Query Mode')
+            # Clear highlights
+            for obj in self.highlight_objects:
+                self.canvas.delete(obj)
+            self.highlight_objects.clear()
+            print("Query mode OFF")
