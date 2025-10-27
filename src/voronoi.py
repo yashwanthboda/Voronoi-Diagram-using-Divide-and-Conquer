@@ -42,8 +42,8 @@ class Voronoi:
         self.query_mode = False
         self.voronoi_grid = None
         self.grid_resolution = 2  # pixel size of each grid cell (lower = more accurate)
-        self.canvas_width = 600
-        self.canvas_height = 600
+        self.canvas_width = 800
+        self.canvas_height = 800
         self.highlighted_site = None
         self.highlight_objects = []
 
@@ -52,17 +52,24 @@ class Voronoi:
         # Title Label
         title_frame = tk.Frame(self.root, bg='#2c3e50', height=50)
         title_frame.pack(fill='x', pady=(0, 10))
-        title_label = tk.Label(title_frame, text="🔷 Voronoi Diagram Visualizer 🔷", 
+        title_label = tk.Label(title_frame, text="Voronoi Diagram Visualizer", 
                               font=("Arial", 16, "bold"), bg='#2c3e50', fg='white')
         title_label.pack(pady=10)
+
+        # Status/Message frame (above canvas)
+        self.message_frame = tk.Frame(self.root, bg='#f0f0f0', height=40)
+        self.message_frame.pack(fill='x', padx=10)
+        self.message_label = tk.Label(self.message_frame, text="", 
+                                      font=("Arial", 12, "bold"), 
+                                      bg='#f0f0f0', fg='#2c3e50',
+                                      pady=10)
+        self.message_label.pack()
 
         # create canvas with border
         canvas_frame = tk.Frame(self.root, bg='#34495e', bd=2, relief='solid')
         canvas_frame.pack(padx=10, pady=5)
-        self.canvas = tk.Canvas(canvas_frame, width=600, height=600, bg="white", 
+        self.canvas = tk.Canvas(canvas_frame, width=800, height=800, bg="white", 
                                highlightthickness=0)
-        self.canvas.pack()
-
         self.canvas.pack()
 
         # Button frame
@@ -100,14 +107,14 @@ class Voronoi:
                                        command=self.generate_random_points, **btn_config)
         self.random_button.pack(side='left', padx=3)
 
-        # execute button
-        self.execute_button = tk.Button(button_frame, text="▶️ Execute", 
+        # execute button - Run complete diagram
+        self.execute_button = tk.Button(button_frame, text="▶️ Run", 
                                         bg='#27ae60', fg='white',
                                         activebackground='#229954',
                                         command=self.exeDraw, **btn_config)
 
-        # step button
-        self.next_button = tk.Button(button_frame, text="⏭️ Step", 
+        # step button - Step through construction
+        self.next_button = tk.Button(button_frame, text="⏩ Next Step", 
                                      bg='#16a085', fg='white',
                                      activebackground='#138d75',
                                      command=self.stepDraw, **btn_config)
@@ -118,14 +125,17 @@ class Voronoi:
                                          activebackground='#d68910',
                                          command=self.toggle_autoplay, **btn_config)
 
-        # read next data button
-        self.read_next_data_button = tk.Button(button_frame, text="⏩ Next Data", 
+        # read next data button - Load next test case
+        self.read_next_data_button = tk.Button(button_frame, text="📄 Next Test", 
                                               bg='#34495e', fg='white',
                                               activebackground='#2c3e50',
                                               command=self.read_next_data, **btn_config)
 
-        # query nearest site button
-        self.query_button = tk.Button(self.root, text="Query Mode", font=("consolas"), command=self.toggle_query_mode, bg='lightgray')
+        # query nearest site button - Better positioned and styled
+        self.query_button = tk.Button(button_frame, text="🔍 Find Site", 
+                                      bg='#e056fd', fg='white',
+                                      activebackground='#c44ddb',
+                                      command=self.toggle_query_mode, **btn_config)
         
         # Status bar
         status_frame = tk.Frame(self.root, bg='#ecf0f1', relief='sunken', bd=1)
@@ -190,12 +200,12 @@ class Voronoi:
         # Generate n random points with some margin from borders
         margin = 30
         for i in range(n):
-            x = random.randint(margin, 600 - margin)
-            y = random.randint(margin, 600 - margin)
+            x = random.randint(margin, self.canvas_width - margin)
+            y = random.randint(margin, self.canvas_height - margin)
             # Check for duplicates
             while (x, y) in self.points:
-                x = random.randint(margin, 600 - margin)
-                y = random.randint(margin, 600 - margin)
+                x = random.randint(margin, self.canvas_width - margin)
+                y = random.randint(margin, self.canvas_height - margin)
             
             self.points.append((x, y))
             self.draw_point(x, y)
@@ -209,6 +219,8 @@ class Voronoi:
         self.points.clear()
         self.autoplay = False
         self.autoplay_button.config(text="▶️ Auto Play", bg='#f39c12')
+        # Clear completion message
+        self.message_label.config(text="", bg='#f0f0f0')
         # Reset buttons
         self.execute_button.pack_forget()
         self.next_button.pack_forget()
@@ -228,7 +240,8 @@ class Voronoi:
         print(self.data)
         self.data_index = 0
         self.read_data_button.pack_forget()
-        self.read_next_data_button.pack(side='left', padx=3, pady=3)
+        self.random_button.pack_forget()
+        self.read_next_data_button.pack(side='left', padx=3)
         self.read_next_data()
         
 
@@ -241,13 +254,18 @@ class Voronoi:
         self.cvh_history.clear()
         self.cvh_history_t = 0
         self.stepMode = False
+        
+        # Show control buttons
+        self.read_next_data_button.pack(side='left', padx=3)
         self.execute_button.pack(side='left', padx=3)
         self.next_button.pack(side='left', padx=3)
         self.autoplay_button.pack(side='left', padx=3)
+        
         n = int(self.data[self.data_index])
         if n == 0:
             print('讀入點數為零，檔案測試停止')
             self.read_data_button.pack(side='left', padx=3)
+            self.random_button.pack(side='left', padx=3)
             self.read_next_data_button.pack_forget()
             self.execute_button.pack_forget()
             self.next_button.pack_forget()
@@ -278,6 +296,8 @@ class Voronoi:
         return history, cvh_history
     
     def exeDraw(self):
+        # Clear any previous completion message
+        self.message_label.config(text="", bg='#f0f0f0')
         if not self.stepMode:
             self.history, self.cvh_history = self.execute()
             if self.history == []:
@@ -295,6 +315,8 @@ class Voronoi:
 
     def stepDraw(self):
         if not self.stepMode:
+            # Clear any previous completion message
+            self.message_label.config(text="", bg='#f0f0f0')
             self.clear_lines()
             self.history.clear()
             self.cvh_history.clear()
@@ -363,17 +385,9 @@ class Voronoi:
             self.draw_point(p[0], p[1])
     
     def show_completion_message(self):
-        """Display completion message on canvas"""
+        """Display completion message above the canvas"""
         message = "✅ Voronoi Diagram Created Successfully!"
-        # Display message at top center of canvas with background
-        # Create a rounded rectangle background that covers full text
-        self.canvas.create_rectangle(80, 10, 520, 40, 
-                                    fill='#2ecc71', outline='#27ae60', 
-                                    width=2, tags="completion_msg")
-        self.canvas.create_text(300, 25, text=message, 
-                               font=("Arial", 12, "bold"), 
-                               fill="white",
-                               tags="completion_msg")
+        self.message_label.config(text=message, bg='#2ecc71', fg='white')
         print(message)
     
     def update_position(self, event):
@@ -513,10 +527,10 @@ class Voronoi:
             if self.voronoi_grid is None:
                 self.build_voronoi_grid()
             
-            self.query_button.config(bg='lightgreen', text='Query Mode: ON')
+            self.query_button.config(bg='#2ecc71', text='🔍 Find Site: ON')
             print("Query mode ON: Right-click anywhere to find nearest site")
         else:
-            self.query_button.config(bg='lightgray', text='Query Mode')
+            self.query_button.config(bg='#e056fd', text='🔍 Find Site')
             # Clear highlights
             for obj in self.highlight_objects:
                 self.canvas.delete(obj)
