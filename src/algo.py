@@ -16,8 +16,14 @@ def sol(points : list, pointNum: int, canvas, Lpart = None):
         return *merge(cvhL, cvhR, linesL, linesR, canvas), history_lines, history_cvhlines
     elif pointNum == 3:
         return *solThree(ThreePoints(points[0], points[1], points[2], Lpart=Lpart)), history_lines, history_cvhlines
-    elif pointNum == 2 :
+    elif pointNum == 2:
         return *solTwo(Line(points[0], points[1], Lpart=Lpart)), history_lines, history_cvhlines
+    elif pointNum == 1:
+        # Single point - return empty lines and the point as convex hull
+        return [], [points[0]], history_lines, history_cvhlines
+    else:
+        # No points - return empty
+        return [], [], history_lines, history_cvhlines
 
 def solTwo(line : Line):
     history_lines.append([copy.deepcopy(line)])

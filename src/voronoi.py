@@ -322,6 +322,13 @@ class Voronoi:
         self.cvh_history_t = len(self.cvh_history)-1
         self.stepDraw()
         
+        # After execution completes, clear canvas and redraw only final Voronoi edges
+        # This removes convex hull and tangent lines from the display
+        self.clear_lines()
+        # Draw only the final Voronoi diagram (last entry in history, which contains final edges)
+        if self.history:
+            draw_lines(self.history[-1], self.canvas)
+        
         # Build grid for query mode after execution
         if self.voronoi_grid is None and len(self.points) >= 2:
             self.build_voronoi_grid()
