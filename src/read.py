@@ -1,3 +1,10 @@
+"""
+## Group-3 (22114022_22114050_22114082) - Boda Yashwanth, Majji Harsha Vardhan and Sadineni Chaitanya
+## Date: Oct 28, 2025
+## read.py - File input handler for reading test cases
+##           Reads point coordinates from input files for batch testing
+"""
+
 def readInput():
     try:
         with open('../testcase/test.in', 'r',encoding="utf-8") as file:

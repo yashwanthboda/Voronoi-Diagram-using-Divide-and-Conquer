@@ -1,3 +1,10 @@
+"""
+## Group-3 (22114022_22114050_22114082) - Boda Yashwanth, Majji Harsha Vardhan and Sadineni Chaitanya
+## Date: Oct 28, 2025
+## algo.py - Implementation of Voronoi Diagram using Divide and Conquer algorithm
+##           Includes divide phase, base cases (2-3 points), merge phase, and convex hull operations
+"""
+
 from line import *
 from drawline import *
 import copy

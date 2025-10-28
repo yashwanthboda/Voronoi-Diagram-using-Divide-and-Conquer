@@ -1,3 +1,10 @@
+"""
+## Group-3 (22114022_22114050_22114082) - Boda Yashwanth, Majji Harsha Vardhan and Sadineni Chaitanya
+## Date: Oct 28, 2025
+## voronoi.py - GUI implementation and main application logic for Voronoi Diagram visualization
+##              Includes interactive features, query mode, and step-by-step execution
+"""
+
 from read import readInput
 from algo import *
 import tkinter as tk

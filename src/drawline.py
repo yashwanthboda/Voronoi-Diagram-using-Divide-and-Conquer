@@ -1,3 +1,10 @@
+"""
+## Group-3 (22114022_22114050_22114082) - Boda Yashwanth, Majji Harsha Vardhan and Sadineni Chaitanya
+## Date: Oct 28, 2025
+## drawline.py - Drawing utilities and color coding for Voronoi Diagram visualization
+##               Handles rendering of Voronoi edges, convex hull, tangent lines, and hyperplanes
+"""
+
 import tkinter as tk
 from line import Line
 

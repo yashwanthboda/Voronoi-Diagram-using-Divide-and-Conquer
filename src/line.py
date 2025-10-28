@@ -1,3 +1,10 @@
+"""
+## Group-3 (22114022_22114050_22114082) - Boda Yashwanth, Majji Harsha Vardhan and Sadineni Chaitanya
+## Date: Oct 28, 2025
+## line.py - Geometric classes and utilities for Voronoi Diagram
+##           Includes Line class (perpendicular bisectors) and ThreePoints class (circumcenter computation)
+"""
+
 import math
 
 class Line:
