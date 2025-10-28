@@ -15,15 +15,31 @@ color_list = [
 def draw_line(canvas, p1, p2, line):
     if line.erase:
         return
-    # Skip drawing convex hull lines
-    if line.isConvexHull:
-        return
-    # global color_idx
-    w =  2
-    color = "#DC143C" if line.Lpart else "#1E90FF"
-    color = "black" if line.isHyper else color#color_list[color_idx % len(color_list)]
-    color = "#ADD8E6" if line.afterMerge else color
-    color = "#00FF00" if line.isTengent else color
+    
+    w = 2
+    
+    # Priority order for color assignment:
+    # 1. Tangent lines (upper/lower common tangent) - BRIGHT ORANGE
+    if line.isTengent:
+        color = "#FF8C00"  # Dark Orange for tangent lines
+        w = 3  # Make tangent lines thicker
+    # 2. Convex hull edges - PURPLE
+    elif line.isConvexHull:
+        color = "#9370DB"  # Medium Purple for convex hull
+        w = 2
+    # 3. Hyperplane/merge line - BLACK
+    elif line.isHyper:
+        color = "black"
+        w = 2
+    # 4. After merge - LIGHT BLUE
+    elif line.afterMerge:
+        color = "#ADD8E6"
+        w = 2
+    # 5. Left partition - RED, Right partition - BLUE
+    else:
+        color = "#DC143C" if line.Lpart else "#1E90FF"
+        w = 2
+    
     canvas.create_line(p1[0], p1[1], p2[0], p2[1], width=w, fill=color)
     # color_idx += 1
 

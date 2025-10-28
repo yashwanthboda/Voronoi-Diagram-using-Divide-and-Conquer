@@ -199,8 +199,8 @@ The implementation follows the classic divide-and-conquer paradigm:
 - 🔴 **Red lines**: Left partition edges
 - 🔵 **Blue lines**: Right partition edges
 - ⚫ **Black lines**: Hyperplane (merge separator)
-- 🟢 **Green lines**: Tangent lines
-- ⚪ **Gray lines**: Convex hull edges
+- � **Purple lines**: Convex hull edges
+- 🟠 **Orange lines**: Upper and lower common tangent lines (thicker)
 - 🔷 **Light blue**: Merged edges
 
 ---
